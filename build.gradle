@@ -27,3 +27,13 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
+// test {
+//     dependsOn cleanTest
+//     testLogging.showStandardStreams = true
+// }
+
+task ten(type: Exec) {
+  executable "sh"
+  args "-c", "for i in \$(seq 1 10); do (cd ./build/classes/main/ && java NQueens \$i); done"
+}
+

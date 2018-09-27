@@ -115,16 +115,9 @@ public class NQueens
        Please note that there may be more than one
        solutions, this function prints one of the
        feasible solutions.*/
-    boolean solveNQ()
-    {
+    int[][] solveNQ() {
         int[][] board = new int[N][N];
-        if (solveNQUtil(board, 0) == false) {
-            System.out.print("Solution does not exist for " + N + "x" + N + "\n");
-            return false;
-        }
-
-        printSolution(board, System.out);
-        return true;
+        return solveNQUtil(board, 0) ? board : null;
     }
 
     // driver program to test above function
@@ -145,6 +138,13 @@ public class NQueens
             n = DEFAULT_SIZE;
         }
         NQueens queenz = new NQueens(n);
-        queenz.solveNQ();
+        int[][] board = queenz.solveNQ();
+
+        if (board == null) {
+            System.err.println("Solution does not exist for " + n + "x" + n + " board.");
+        } else {
+            System.out.println(n + ":");
+            queenz.printSolution(board, System.out);
+        }
     }
 }
