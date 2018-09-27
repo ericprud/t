@@ -127,10 +127,22 @@ public class NQueens
 
     // driver program to test above function
     public static void main(String args[]) {
-        for(int n = 1; n <= 10; n++) {
-            System.out.println(n + ":");
-            NQueens Queen = new NQueens(n);
-            Queen.solveNQ();
+        int n;
+
+        if(args.length > 0) {
+            try {
+                n = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                System.err.println("Expected small-ish integer, not \"" + args[0] + "\".");
+                System.exit(1);
+                n = 0; // keep java's SSA from whining.
+            }
+        } else {
+            final int DEFAULT_SIZE = 8;
+            System.err.println("Usage: NQueens <int>\nusing " + DEFAULT_SIZE);
+            n = DEFAULT_SIZE;
         }
+        NQueens queenz = new NQueens(n);
+        queenz.solveNQ();
     }
 }
