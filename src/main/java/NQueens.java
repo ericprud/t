@@ -1,3 +1,5 @@
+import java.io.PrintStream;
+
 /* Java program to solve N Queen Problem using
    backtracking */
 public class NQueens
@@ -9,12 +11,12 @@ public class NQueens
     }
 
     /* A utility function to print solution */
-    void printSolution(int board[][]) {
+    void printSolution(int board[][], PrintStream out) {
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++)
-                System.out.print(" " + (board[i][j] > 0 ? 'Q' : '.')
+                out.print(" " + (board[i][j] > 0 ? 'Q' : '.')
                                  + " ");
-            System.out.println();
+            out.println();
         }
     }
 
@@ -121,7 +123,7 @@ public class NQueens
             return false;
         }
 
-        printSolution(board);
+        printSolution(board, System.out);
         return true;
     }
 
