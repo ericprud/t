@@ -1,10 +1,10 @@
 /* Java program to solve N Queen Problem using
    backtracking */
-public class NQueenProblem
+public class NQueens
 {
     int N = 8;
 
-    NQueenProblem(int size) {
+    NQueens(int size) {
         N = size;
     }
 
@@ -76,8 +76,7 @@ public class NQueenProblem
         for (int i = 0; i < N; i++) {
             /* Check if the queen can be placed on
                board[i][col] */
-            if (board[i][col] == 0 &&
-                isSafe(board, i, col)) {
+            if (board[i][col] == 0 && isSafe(board, i, col)) {
                 /* Place this queen in board[i][col] */
                 board[i][col] = 1;
 
@@ -130,9 +129,8 @@ public class NQueenProblem
     public static void main(String args[]) {
         for(int n = 1; n <= 10; n++) {
             System.out.println(n + ":");
-            NQueenProblem Queen = new NQueenProblem(n);
+            NQueens Queen = new NQueens(n);
             Queen.solveNQ();
         }
     }
 }
-// This code is contributed by Abhishek Shankhadhar
