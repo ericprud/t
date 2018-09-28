@@ -5,9 +5,16 @@ import java.io.PrintStream;
 public class NQueens
 {
     int N = 8;
+    boolean allowLines;
 
     NQueens(int size) {
         N = size;
+        this.allowLines = false;
+    }
+
+    NQueens(int size, boolean allowLines) {
+        N = size;
+        this.allowLines = allowLines;
     }
 
     /* A utility function to print solution */
@@ -48,6 +55,9 @@ public class NQueens
 
     /* Mark all the lines implied by earlier queens. */
     void stakeOutLines (int board[][], int N, int row, int col, int incr) {
+        if (allowLines)
+            return;
+
         for (int lookBackCol = 0; lookBackCol < col; lookBackCol++) {
             for (int lookBackRow = 0; lookBackRow < N; lookBackRow++) {
                 if (board[lookBackRow][lookBackCol] > 0) {
