@@ -3,37 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Data Exchange Proposal Generator</title>
+<title>Budget Proposal Generator</title>
 <style>
     body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
     h1, h2 { color: #333; }
-    label { display: block; margin: 10px 0 5px; font-weight: bold; }
-    input[type="number"] { width: 60px; padding: 5px; margin-bottom: 15px; }
+    /* label { display: block; margin: 10px 0 5px; font-weight: bold; } */
+    /* input[type="number"] { width: 60px; padding: 5px; margin-bottom: 15px; } */
     hr { margin: 30px 0; }
-    .form-container { max-width: 400px; }
+    /* .form-container { max-width: 400px; } */
     .proposal { margin-top: 30px; padding: 20px; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; }
     .proposal h2 { margin-top: 0; }
     .proposal table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     .proposal table, .proposal th, .proposal td { border: 1px solid #999; }
     .proposal th, .proposal td { padding: 8px; text-align: left; }
+
+    form span { width999: 46%; float:left; padding-right: 2em; }
+    .proposal { clear: both; }
+    form p:after {
+        content: '';
+        display: block;
+        clear: both;
+    }
+    input { width: 5em; }
+    label::after { content: ':' }
 </style>
 </head>
 <body>
 
-<h1>Data Exchange Proposal Generator</h1>
-
-<p>Set the number of organizations (o) and formats (f) below. The proposal will update automatically.</p>
+<h1>Budget Proposal Generator</h1>
 
 <hr>
 
 <div class="form-container">
-    <form id="proposalParmsForm">
-        <button type="submit">Update URL & Proposal</button>
-        <template id="proposalParmInput">
-            <label for="parm-">:</label>
-            <input type="number" id="parm-" min="1" required>
-        </template>
-    </form>
+  <form id="proposalParmsForm">
+    <button type="submit">Restore defaults</button>
+    <template id="proposalRow">
+      <p class="row">
+      </p>
+    </template>
+    <template id="proposalParmInput">
+      <span>
+        <label for="parm-">:</label>
+        <input type="number" id="parm-" min="0" required>
+      </span>
+    </template>
+  </form>
 </div>
 
 <div class="proposal" id="proposalContent">
@@ -41,69 +55,90 @@
 </div>
 
 <script>
-  const ParameterList = [
-    { name: 'nOrgs', defolt: 5, prompt: "Number of Organizations" },
-    { name: 'nFormats', defolt: 3, prompt: "Number of Formats" },
-    { name: 'salary', defolt: 70000, prompt: "FTE billing €/year" },
-    { name: 'hotelNight', defolt: 130, prompt: "Average hotel cost €/night" },
+  const ParameterGroupList = [
+    [ { name: 'infrastructure', defolt: 4, prompt: "Infrastructure dev (FTE months)" },
+      { name: 'ui', defolt: 3, prompt: "Ui dev (FTE months)" }],
+    [ { name: 'nOrgs', defolt: 5, prompt: "Number of Organizations" },
+      { name: 'orgMeets', defolt: 2, prompt: "meetings per org" } ],
+    [ { name: 'nFormats', defolt: 3, prompt: "Number of Formats" },
+      { name: 'formatMeets', defolt: 2, prompt: "meetings per format" },
+      { name: 'formatInfra', defolt: 2, prompt: "infrastruture (FTE months)" },
+      { name: 'formatUi', defolt: 1, prompt: "user interface (FTE months)" } ],
+    [ { name: 'salary', defolt: 70000, prompt: "FTE billing €/year" } ],
+    [ { name: 'travelDays', defolt: 3, prompt: "average travel duration (days)" },
+      { name: 'hotelNight', defolt: 130, prompt: "average hotel cost €/night" },
+      { name: 'perDiem', defolt: 60, prompt: "per diem €/day" },
+      { name: 'transport', defolt: 250, prompt: "transportation €/trip" },
+      { name: 'meetStaff', defolt: 2, prompt: "number of staff" } ],
   ];
   const CurrentParms = {};
   
   const form = document.getElementById("proposalParmsForm");
-  const submit = form.querySelectorAll('submit');
-  const template = document.getElementById("proposalParmInput");
-  const clones = ParameterList.map(parm => {
-    const searchValue = parseInt(new URLSearchParams(window.location.search).get('salary')) || parm.defolt;
-    CurrentParms[parm.name] = searchValue;
+  const resetButton = form.querySelector('button[type=submit]');
+  const rowTemplate = document.getElementById("proposalRow");
+  const inputTemplate = document.getElementById("proposalParmInput");
+  const searchParms = new URLSearchParams(window.location.search);
 
-    const id = "parm-" + parm.name;
-    const clone = template.content.cloneNode(true);
+  const cloneLists = ParameterGroupList.map(group => {
+    const rowClone = rowTemplate.content.cloneNode(true);
+    const row = rowClone.querySelector(".row");
 
-    const label = clone.querySelector("label");
-    label.textContent = parm.prompt;
-    label.setAttribute("for", id);
+    const inputClones = group.map(parm => {
+      const searchValue = searchParms.has(parm.name)
+            ? parseInt(searchParms.get(parm.name))
+            : parm.defolt;
+      CurrentParms[parm.name] = searchValue;
+      
+      const id = "parm-" + parm.name;
+      const inputClone = inputTemplate.content.cloneNode(true);
+      
+      const label = inputClone.querySelector("label");
+      label.textContent = parm.prompt;
+      label.setAttribute("for", id);
 
-    const input = clone.querySelector("input");
-    label.setAttribute("id", id);
-    input.value = searchValue;
-    input.dataset.parm = parm;
-    input.addEventListener('input', function() {
-      const params = new URLSearchParams(window.location.search);
-      params.set(parm.name, input.value);
-      history.replaceState(null, '', window.location.pathname + '?' + params.toString());
-
-      const updatedValue = input.value;
-      CurrentParms[parm.name] = updatedValue;
-      generateProposal(CurrentParms);
+      const input = inputClone.querySelector("input");
+      input.setAttribute("id", id);
+      input.value = searchValue;
+      input.dataset.parm = parm;
+      input.addEventListener('input', evt => {
+        const params = searchParms;
+        params.set(parm.name, input.value);
+        history.replaceState(null, '', window.location.pathname + '?' + params.toString());
+        
+        const updatedValue = parseInt(input.value);
+        CurrentParms[parm.name] = updatedValue;
+        generateProposal(CurrentParms);
+      });
+      
+      row.appendChild(inputClone);
+      return inputClone;
     });
-
-    form.appendChild(clone);
+    form.insertBefore(rowClone, resetButton);
+    return inputClones;
   });
-  
-  // Constants
-  
-  function initForm() {
-    generateProposal(CurrentParms);
-  }
-  
+
+  console.log(cloneLists);
+  resetButton.addEventListener('submit', evt => {
+    history.replaceState(null, '', window.location.pathname);
+  });
+
   function generateProposal(parms) {
-    const {nOrgs, nFormats, salary, hotelNight} = parms;
 
     const workDaysPerYear = 220;
-    const dailyRate = salary / workDaysPerYear;
-    const travelCostPerMeeting = 400 + (3*hotelNight) + (3*60); // travel + hotel + per diem
+    const dailyRate = parms.salary / workDaysPerYear;
+    const travelCostPerMeeting = parms.transport + (parms.travelDays*parms.hotelNight) + (parms.travelDays*parms.perDiem); // travel + hotel + per diem
 
-    const meetings = 2*nOrgs + 3*nFormats;
+    const meetings = parms.orgMeets*parms.nOrgs + parms.formatMeets*parms.nFormats;
     const travelCost = meetings * travelCostPerMeeting;
-    const meetingStaffDays = meetings * 2;
+    const meetingStaffDays = meetings * parms.meetStaff;
     const meetingStaffCost = meetingStaffDays * dailyRate;
     
-    const infrastructureFTE = 3; // months
-    const uiFTE = 3; // months
-    const formatEngineeringFTE = 2*nFormats; // 2 months per format
-    const formatUIFTE = 1*nFormats; // 1 month per format
+    const infrastructureFTE = parms.infrastructure; // months
+    const uiFTE = parms.ui; // months
+    const formatEngineeringFTE = parms.formatInfra*parms.nFormats; // 2 months per format
+    const formatUIFTE = parms.formatUi*parms.nFormats; // 1 month per format
     
-    const engineeringCost = (infrastructureFTE + uiFTE + formatEngineeringFTE + formatUIFTE) * (salary/12);
+    const engineeringCost = (parms.infrastructure + uiFTE + formatEngineeringFTE + formatUIFTE) * (parms.salary/12);
     
     const totalCost = travelCost + meetingStaffCost + engineeringCost;
     
@@ -111,11 +146,11 @@
             <h2>Proposal: Establishment of a Data Exchange Standard</h2>
 
             <h3>1. Executive Summary</h3>
-            <p>This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${nOrgs}</strong> organizations and <strong>${nFormats}</strong> target formats. The project includes coordination meetings, infrastructure development, user interface (UI) work, and format-specific engineering.</p>
+            <p>This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${parms.nOrgs}</strong> organizations and <strong>${parms.nFormats}</strong> target formats. The project includes coordination meetings, infrastructure development, user interface (UI) work, and format-specific engineering.</p>
 
             <h3>2. Scope of Work</h3>
             <ul>
-                <li>Stakeholder engagement: 2 meetings per organization and 3 meetings per format.</li>
+  <li>Stakeholder engagement: ${parms.orgMeets} meetings per organization and ${parms.formatMeets} meetings per format.</li>
                 <li>Travel & subsistence for project team members attending stakeholder sessions.</li>
                 <li>Infrastructure engineering: Core back-end and data exchange infrastructure.</li>
                 <li>User Interface (UI) development: Reference implementation for interacting with the data exchange.</li>
@@ -124,10 +159,10 @@
 
             <h3>3. Resource Requirements</h3>
             <ul>
-                <li>Infrastructure Engineering: 3 months FTE</li>
-                <li>UI Engineering (core): 3 months FTE</li>
-                <li>Format Engineering: 2 months/format × ${nFormats} formats = ${formatEngineeringFTE} months FTE</li>
-                <li>Format-specific UI: 1 month/format × ${nFormats} formats = ${formatUIFTE} months FTE</li>
+  <li>Infrastructure Engineering: ${parms.infrastructure} months FTE</li>
+  <li>UI Engineering (core): ${parms.ui} months FTE</li>
+  <li>Format Engineering: ${parms.formatInfra} months/format × ${parms.nFormats} formats = ${formatEngineeringFTE} months FTE</li>
+  <li>Format-specific UI: ${parms.formatUi} month/format × ${parms.nFormats} formats = ${formatUIFTE} months FTE</li>
                 <li>Meetings/Coordination: ${meetingStaffDays} staff-days</li>
             </ul>
 
@@ -142,16 +177,16 @@
 
             <h3>5. Assumptions & Exclusions</h3>
             <ul>
-                <li>Billing rate: ${salary} €/year (~${dailyRate.toFixed(0)} €/day).</li>
-                <li>Hotel: ${hotelNight} €/night, 3 nights per meeting.</li>
-                <li>Per diem: 60 €/day, 3 days per meeting.</li>
-                <li>Travel: 400 €/meeting within Europe.</li>
+                <li>Billing rate: ${parms.salary} €/year (~${dailyRate.toFixed(0)} €/day).</li>
+                <li>Hotel: ${parms.hotelNight} €/night, ${parms.travelDays} nights per meeting.</li>
+                <li>Per diem: ${parms.perDiem} €/day, ${parms.travelDays} days per meeting.</li>
+                <li>Travel: ${parms.transport} €/meeting within Europe.</li>
             </ul>
         `;
     document.getElementById('proposalContent').innerHTML = proposalHTML;
   }
   
-  window.addEventListener('load', initForm);
+  window.addEventListener('load', evt => {generateProposal(CurrentParms)});
 </script>
 
 </body>
