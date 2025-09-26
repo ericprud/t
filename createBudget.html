@@ -22,11 +22,6 @@
     }
 
     form {
-        span {
-            width999: 46%;
-            float:left;
-            padding: 0 1em;
-        }
         .row {
             background: #def;
             padding: .3em 0;
@@ -35,6 +30,18 @@
             border: medium solid #d9eafc;
             display: table;
 
+            .prompt {
+                display: table-cell;
+                padding: 0 1em;
+                font-size: 1em;
+            }
+            .prompt::after { content: ':' }
+
+            span {
+                /* float:left; */
+                padding: 0 .5em;
+            }
+
             label::after { content: ':' }
 
             input {
@@ -42,11 +49,11 @@
                 background: #eef;
             }
         }
-        .row:after {
+        /* .row:after {
             content: '';
             display: block;
             clear: both;
-        }
+       } */
     }
 
 </style>
@@ -61,8 +68,10 @@
   <form id="proposalParmsForm">
     <button type="submit">Restore defaults</button>
     <template id="proposalRow">
-      <p class="row">
-      </p>
+      <div class="row">
+        <h3 class="prompt"></h3>
+        <p></p>
+      </div>
     </template>
     <template id="proposalParmInput">
       <span>
@@ -79,20 +88,25 @@
 
 <script>
   const ParameterGroupList = [
-    [ { name: 'infrastructure', defolt: 4, prompt: "Infrastructure dev (FTE months)" },
-      { name: 'ui', defolt: 3, prompt: "Ui dev (FTE months)" }],
-    [ { name: 'nOrgs', defolt: 5, prompt: "Number of Organizations" },
-      { name: 'orgMeets', defolt: 2, prompt: "meetings per org" } ],
-    [ { name: 'nFormats', defolt: 3, prompt: "Number of Formats" },
+    { prompt: "Core Development", members: [
+      { name: 'infrastructure', defolt: 4, prompt: "Infrastructure dev (FTE months)" },
+      { name: 'ui', defolt: 3, prompt: "Ui dev (FTE months)" } ] },
+    { prompt: "Collaborating Organizations", members: [
+      { name: 'nOrgs', defolt: 5, prompt: "Number" },
+      { name: 'orgMeets', defolt: 2, prompt: "meetings per org" } ] },
+    { prompt: "Compatible Formats", members: [
+      { name: 'nFormats', defolt: 3, prompt: "Number" },
       { name: 'formatMeets', defolt: 2, prompt: "meetings per format" },
       { name: 'formatInfra', defolt: 2, prompt: "infrastruture (FTE months)" },
-      { name: 'formatUi', defolt: 1, prompt: "user interface (FTE months)" } ],
-    [ { name: 'salary', defolt: 70000, prompt: "FTE billing €/year" } ],
-    [ { name: 'travelDays', defolt: 3, prompt: "average travel duration (days)" },
+      { name: 'formatUi', defolt: 1, prompt: "user interface (FTE months)" } ] },
+    { prompt: "Personel", members: [
+      { name: 'salary', defolt: 70000, prompt: "FTE billing €/year" } ] },
+    { prompt: "Meetings", members: [
+      { name: 'travelDays', defolt: 3, prompt: "average travel duration (days)" },
       { name: 'hotelNight', defolt: 130, prompt: "average hotel cost €/night" },
       { name: 'perDiem', defolt: 60, prompt: "per diem €/day" },
       { name: 'transport', defolt: 250, prompt: "transportation €/trip" },
-      { name: 'meetStaff', defolt: 2, prompt: "number of staff" } ],
+      { name: 'meetStaff', defolt: 2, prompt: "number of staff" } ] },
   ];
   const CurrentParms = {};
   
@@ -104,9 +118,11 @@
 
   const cloneLists = ParameterGroupList.map(group => {
     const rowClone = rowTemplate.content.cloneNode(true);
+    const rowPrompt = rowClone.querySelector(".prompt");
+    rowPrompt.textContent = group.prompt;
     const row = rowClone.querySelector(".row");
 
-    const inputClones = group.map(parm => {
+    const inputClones = group.members.map(parm => {
       const searchValue = searchParms.has(parm.name)
             ? parseInt(searchParms.get(parm.name))
             : parm.defolt;
