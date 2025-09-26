@@ -7,25 +7,48 @@
 <style>
     body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
     h1, h2 { color: #333; }
-    /* label { display: block; margin: 10px 0 5px; font-weight: bold; } */
-    /* input[type="number"] { width: 60px; padding: 5px; margin-bottom: 15px; } */
     hr { margin: 30px 0; }
-    /* .form-container { max-width: 400px; } */
-    .proposal { margin-top: 30px; padding: 20px; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; }
-    .proposal h2 { margin-top: 0; }
-    .proposal table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    .proposal table, .proposal th, .proposal td { border: 1px solid #999; }
-    .proposal th, .proposal td { padding: 8px; text-align: left; }
+    .proposal {
+        margin-top: 30px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background: #fafafa;
 
-    form span { width999: 46%; float:left; padding-right: 2em; }
-    .proposal { clear: both; }
-    form p:after {
-        content: '';
-        display: block;
-        clear: both;
+        h2 { margin-top: 0; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        table, th, td { border: 1px solid #999; }
+        th, td { padding: 8px; text-align: left; }
     }
-    input { width: 5em; }
-    label::after { content: ':' }
+
+    form {
+        span {
+            width999: 46%;
+            float:left;
+            padding: 0 1em;
+        }
+        .row {
+            background: #def;
+            padding: .3em 0;
+            border-radius: .5em;
+            margin: 1ex 0;
+            border: medium solid #d9eafc;
+            display: table;
+
+            label::after { content: ':' }
+
+            input {
+                width: 5em;
+                background: #eef;
+            }
+        }
+        .row:after {
+            content: '';
+            display: block;
+            clear: both;
+        }
+    }
+
 </style>
 </head>
 <body>
@@ -143,7 +166,7 @@
     const totalCost = travelCost + meetingStaffCost + engineeringCost;
     
     const proposalHTML = `
-            <h2>Proposal: Establishment of a Data Exchange Standard</h2>
+  <h2>Proposal: Establishment of a Data (@@what's the breadth of this?) Exchange Standard</h2>
 
             <h3>1. Executive Summary</h3>
             <p>This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${parms.nOrgs}</strong> organizations and <strong>${parms.nFormats}</strong> target formats. The project includes coordination meetings, infrastructure development, user interface (UI) work, and format-specific engineering.</p>
