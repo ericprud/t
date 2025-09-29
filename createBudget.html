@@ -55,6 +55,7 @@
             clear: both;
        } */
     }
+    th::after { content: ':' }
 
 </style>
 </head>
@@ -165,19 +166,16 @@
 
     const workDaysPerYear = 220;
     const dailyRate = parms.salary / workDaysPerYear;
+
+    const engineeringTime = (parms.infrastructure + parms.ui + parms.formatInfra*parms.nFormats + parms.formatUi*parms.nFormats);
+    const engineeringCost = engineeringTime * (parms.salary/12);
     const travelCostPerMeeting = parms.transport + (parms.travelDays*parms.hotelNight) + (parms.travelDays*parms.perDiem); // travel + hotel + per diem
 
     const meetings = parms.orgMeets*parms.nOrgs + parms.formatMeets*parms.nFormats;
     const travelCost = meetings * travelCostPerMeeting;
     const meetingStaffDays = meetings * parms.meetStaff;
     const meetingStaffCost = meetingStaffDays * dailyRate;
-    
-    const infrastructureFTE = parms.infrastructure; // months
-    const uiFTE = parms.ui; // months
-    const formatEngineeringFTE = parms.formatInfra*parms.nFormats; // 2 months per format
-    const formatUIFTE = parms.formatUi*parms.nFormats; // 1 month per format
-    
-    const engineeringCost = (parms.infrastructure + uiFTE + formatEngineeringFTE + formatUIFTE) * (parms.salary/12);
+
     
     const totalCost = travelCost + meetingStaffCost + engineeringCost;
     
@@ -191,22 +189,21 @@
   </p>
 
   <h3>2. Scope of Work</h3>
-  <ul>
+  <table>
     <li>Stakeholder engagement: ${parms.orgMeets} meetings per organization and ${parms.formatMeets} meetings per format.</li>
     <li>Travel & subsistence for project team members attending stakeholder sessions.</li>
     <li>Infrastructure engineering: Core back-end and data exchange infrastructure.</li>
     <li>User Interface (UI) development: Reference implementation for interacting with the data exchange.</li>
     <li>Format-specific engineering and UI adjustments.</li>
-  </ul>
+  </table>
 
   <h3>3. Resource Requirements</h3>
-  <ul>
-    <li>Infrastructure Engineering: ${parms.infrastructure} months FTE</li>
-    <li>UI Engineering (core): ${parms.ui} months FTE</li>
-    <li>Format Engineering: ${parms.formatInfra} months/format × ${parms.nFormats} formats = ${formatEngineeringFTE} months FTE</li>
-    <li>Format-specific UI: ${parms.formatUi} month/format × ${parms.nFormats} formats = ${formatUIFTE} months FTE</li>
-    <li>Meetings/Coordination: ${meetingStaffDays} staff-days</li>
-  </ul>
+  <table>
+    <tr><td>              </td><td>core                   </td><td> </td><td>${parms.nOrgs} orgs                                                            </td><td> </td><td>${parms.nFormats} formats                                                                       </td><td> </td><td>                                    </td></tr> 
+    <tr><th>Infrastructure</th><td>${parms.infrastructure}</td><td>+</td><td>0                                                                              </td><td>+</td><td>${parms.formatInfra} months per format X ${parms.nFormats} = ${parms.formatInfra*parms.nFormats}</td><td>=</td><td> ${parms.infrastructure + parms.formatInfra*parms.nFormats} months FTE </td></tr>
+    <tr><th>UI            </th><td>${parms.ui}            </td><td>+</td><td>0                                                                              </td><td>+</td><td>${parms.formatUi   } months per format X ${parms.nFormats} = ${parms.formatUi   *parms.nFormats}</td><td>=</td><td> ${parms.ui             + parms.formatUi   *parms.nFormats} months FTE             </td></tr>
+    <tr><th>F2F Meetings  </th><td>0                      </td><td>+</td><td>${parms.orgMeets} F2Fs per org * ${parms.nOrgs} = ${parms.orgMeets*parms.nOrgs}</td><td>+</td><td>${parms.formatMeets} F2F per format    X ${parms.nFormats} = ${parms.formatMeets*parms.nFormats}</td><td>=</td><td> ${parms.orgMeets*parms.nOrgs + parms.formatMeets*parms.nFormats } * ${parms.meetStaff} staff per meeting = ${meetingStaffDays} staff-days     </td></tr>
+  </table>
 
   <h3>4. Cost Estimate</h3>
   <table>
