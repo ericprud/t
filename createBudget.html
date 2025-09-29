@@ -184,44 +184,46 @@
     const proposalHTML = `
   <h2>Proposal: Establishment of a Data (@@what's the breadth of this?) Exchange Standard</h2>
 
-            <h3>1. Executive Summary</h3>
-            <p>This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${parms.nOrgs}</strong> organizations and <strong>${parms.nFormats}</strong> target formats. The project includes coordination meetings, infrastructure development, user interface (UI) work, and format-specific engineering.</p>
+  <h3>1. Executive Summary</h3>
+  <p>
+    This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${parms.nOrgs}</strong> organizations and <strong>${parms.nFormats}</strong> target formats.
+    The project includes coordination meetings, infrastructure development, user interface (UI) work, and format-specific engineering.
+  </p>
 
-            <h3>2. Scope of Work</h3>
-            <ul>
-  <li>Stakeholder engagement: ${parms.orgMeets} meetings per organization and ${parms.formatMeets} meetings per format.</li>
-                <li>Travel & subsistence for project team members attending stakeholder sessions.</li>
-                <li>Infrastructure engineering: Core back-end and data exchange infrastructure.</li>
-                <li>User Interface (UI) development: Reference implementation for interacting with the data exchange.</li>
-                <li>Format-specific engineering and UI adjustments.</li>
-            </ul>
+  <h3>2. Scope of Work</h3>
+  <ul>
+    <li>Stakeholder engagement: ${parms.orgMeets} meetings per organization and ${parms.formatMeets} meetings per format.</li>
+    <li>Travel & subsistence for project team members attending stakeholder sessions.</li>
+    <li>Infrastructure engineering: Core back-end and data exchange infrastructure.</li>
+    <li>User Interface (UI) development: Reference implementation for interacting with the data exchange.</li>
+    <li>Format-specific engineering and UI adjustments.</li>
+  </ul>
 
-            <h3>3. Resource Requirements</h3>
-            <ul>
-  <li>Infrastructure Engineering: ${parms.infrastructure} months FTE</li>
-  <li>UI Engineering (core): ${parms.ui} months FTE</li>
-  <li>Format Engineering: ${parms.formatInfra} months/format × ${parms.nFormats} formats = ${formatEngineeringFTE} months FTE</li>
-  <li>Format-specific UI: ${parms.formatUi} month/format × ${parms.nFormats} formats = ${formatUIFTE} months FTE</li>
-                <li>Meetings/Coordination: ${meetingStaffDays} staff-days</li>
-            </ul>
+  <h3>3. Resource Requirements</h3>
+  <ul>
+    <li>Infrastructure Engineering: ${parms.infrastructure} months FTE</li>
+    <li>UI Engineering (core): ${parms.ui} months FTE</li>
+    <li>Format Engineering: ${parms.formatInfra} months/format × ${parms.nFormats} formats = ${formatEngineeringFTE} months FTE</li>
+    <li>Format-specific UI: ${parms.formatUi} month/format × ${parms.nFormats} formats = ${formatUIFTE} months FTE</li>
+    <li>Meetings/Coordination: ${meetingStaffDays} staff-days</li>
+  </ul>
 
-            <h3>4. Cost Estimate</h3>
-            <table>
-                <tr><th>Component</th><th>Cost (€)</th></tr>
-                <tr><td>Travel & subsistence (${meetings} meetings)</td><td>${travelCost.toFixed(0)}</td></tr>
-                <tr><td>Staff time – meetings (${meetingStaffDays} days)</td><td>${meetingStaffCost.toFixed(0)}</td></tr>
-                <tr><td>Engineering & UI (FTEs)</td><td>${engineeringCost.toFixed(0)}</td></tr>
-                <tr><th>Total Project Estimate</th><th>${totalCost.toFixed(0)}</th></tr>
-            </table>
+  <h3>4. Cost Estimate</h3>
+  <table>
+    <tr><th>Component</th><th>Cost (€)</th></tr>
+    <tr><td>Travel & subsistence (${meetings} meetings)</td><td>${travelCost.toFixed(0)}</td></tr>
+    <tr><td>Staff time – meetings (${meetingStaffDays} days)</td><td>${meetingStaffCost.toFixed(0)}</td></tr>
+    <tr><td>Engineering & UI (FTEs)</td><td>${engineeringCost.toFixed(0)}</td></tr>
+    <tr><th>Total Project Estimate</th><th>${totalCost.toFixed(0)}</th></tr>
+  </table>
 
-            <h3>5. Assumptions & Exclusions</h3>
-            <ul>
-                <li>Billing rate: ${parms.salary} €/year (~${dailyRate.toFixed(0)} €/day).</li>
-                <li>Hotel: ${parms.hotelNight} €/night, ${parms.travelDays} nights per meeting.</li>
-                <li>Per diem: ${parms.perDiem} €/day, ${parms.travelDays} days per meeting.</li>
-                <li>Travel: ${parms.transport} €/meeting within Europe.</li>
-            </ul>
-        `;
+  <h3>5. Assumptions</h3>
+  <ul>
+    <li>Billing rate: ${parms.salary} €/year (~${dailyRate.toFixed(0)} €/day).</li>
+    <li>Hotel: ${parms.hotelNight} €/night, ${parms.travelDays} nights per meeting.</li>
+    <li>Per diem: ${parms.perDiem} €/day, ${parms.travelDays} days per meeting.</li>
+    <li>Travel: ${parms.transport} €/meeting within Europe.</li>
+  </ul>`;
     document.getElementById('proposalContent').innerHTML = proposalHTML;
   }
   
