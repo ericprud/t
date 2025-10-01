@@ -88,109 +88,148 @@
 </div>
 
 <script>
-  const ParameterGroupList = [
-    { prompt: "Core Development", members: [
-      { name: 'infrastructure', defolt: 4, prompt: "Infrastructure dev (FTE months)" },
+
+  /**
+   * Construct and handle interactions with a 2-D array of form inputs.
+   */
+  class Form {
+    constructor (
+      groups, // 2D array of input specs
+      onChange // what to call on form update
+    ) {
+      this.groups = groups;
+      this.build(onChange);
+    }
+
+    /**
+     * Return value of form element named $member in group $group
+     */
+    get (groupDotMember) {
+      const [group, member] = groupDotMember.split('.');
+      const parm = this.inputsIndex[group][member];
+      const value = parm.input.value;
+      return parm.isFloat
+        ? parseFloat(value)
+        : parseInt(value);
+    }
+
+    /**
+     * Construct form and register handlers.
+     */
+    build (onChange) {
+      const form = document.getElementById("proposalParmsForm");
+      const resetButton = form.querySelector('button[type=submit]');
+      const rowTemplate = document.getElementById("proposalRow");
+      const inputTemplate = document.getElementById("proposalParmInput");
+      const searchParms = new URLSearchParams(window.location.search);
+      
+      this.inputsIndex = this.groups.reduce((groupIdx, group) => {
+        const rowClone = rowTemplate.content.cloneNode(true);
+        const rowPrompt = rowClone.querySelector(".prompt");
+        rowPrompt.textContent = group.prompt;
+        const row = rowClone.querySelector(".row");
+        
+        const memberIdx = group.members.reduce((memberIdx, parm) => {
+          memberIdx[parm.name] = parm;
+          parm.isFloat = parm.step && parseFloat(parm.step) %1 !== 0;
+          
+          const searchValue = !searchParms.has(parm.name)
+                ? parm.defolt
+                : parm.isFloat
+                ? parseFloat(searchParms.get(parm.name))
+                : parseInt(searchParms.get(parm.name));
+          
+          const id = "parm-" + group.name + '.' + parm.name;
+          const inputClone = inputTemplate.content.cloneNode(true);
+          
+          const label = inputClone.querySelector("label");
+          label.textContent = parm.prompt;
+          label.setAttribute("for", id);
+          
+          const input = parm.input = inputClone.querySelector("input");
+          input.setAttribute("id", id);
+          for (const attr of ['step', 'min']) {
+            if (parm[attr])
+              input.setAttribute(attr, parm[attr]);
+          }
+          input.value = searchValue;
+          input.dataset.parm = JSON.stringify(parm);
+          input.addEventListener('input', evt => {
+            const params = searchParms;
+            params.set(parm.name, input.value);
+            history.replaceState(null, '', window.location.pathname + '?' + params.toString());
+            onChange(this);
+          });
+          
+          row.appendChild(inputClone);
+          return memberIdx;
+        }, {});
+        form.insertBefore(rowClone, resetButton);
+        groupIdx[group.name] = memberIdx;
+        return groupIdx;
+      }, {});
+      
+      resetButton.addEventListener('submit', evt => {
+        history.replaceState(null, '', window.location.pathname);
+      });
+    }
+  }
+
+  // Construct form with generateProposal as callback and call generateProposal once.
+  window.addEventListener('load', evt => generateProposal(new Form([
+    { name: "CoreDev", prompt: "Core Development", members: [
+      { name: 'infra', defolt: 4, prompt: "Infrastructure dev (FTE months)" },
       { name: 'ui', defolt: 3, prompt: "Ui dev (FTE months)" } ] },
-    { prompt: "Collaborating Organizations", members: [
-      { name: 'nOrgs', defolt: 5, prompt: "Number" },
-      { name: 'orgMeets', defolt: 2, prompt: "meetings per org" } ] },
-    { prompt: "Compatible Formats", members: [
-      { name: 'nFormats', defolt: 3, prompt: "Number" },
-      { name: 'formatMeets', defolt: 2, prompt: "meetings per format" },
-      { name: 'formatInfra', defolt: 2, prompt: "infrastruture (FTE months)" },
-      { name: 'formatUi', defolt: 1, prompt: "user interface (FTE months)" } ] },
-    { prompt: "Personel", members: [
-      { name: 'salary', defolt: 70000, prompt: "FTE billing €/year" } ] },
-    { prompt: "Meetings", members: [
+    { name: "org", prompt: "Collaborating Organizations", members: [
+      { name: 'count', defolt: 5, prompt: "Number" },
+      { name: 'meets', defolt: 2, prompt: "meetings per org" } ] },
+    { name: "format", prompt: "Compatible Formats", members: [
+      { name: 'count', defolt: 3, prompt: "Number" },
+      { name: 'meets', defolt: 2, prompt: "meetings per format" },
+      { name: 'infra', defolt: 2, prompt: "infrastruture (FTE months)" },
+      { name: 'ui', defolt: 1, prompt: "user interface (FTE months)" } ] },
+    { name: "Personel", prompt: "Personel", members: [
+      { name: 'salary', defolt: 70000, prompt: "FTE billing €/year" },
+      { name: 'workDays', defolt: 220, prompt: "workdays / year" } ] },
+    { name: "meetLogistics", prompt: "Meetings", members: [
       { name: 'travelDays', defolt: 3, prompt: "average travel duration (days)" },
       { name: 'hotelNight', defolt: 130, prompt: "average hotel cost €/night" },
       { name: 'perDiem', defolt: 60, prompt: "per diem €/day" },
       { name: 'transport', defolt: 250, prompt: "transportation €/trip" },
-      { name: 'meetStaff', defolt: 2, prompt: "number of staff" } ] },
-  ];
-  const CurrentParms = {};
-  
-  const form = document.getElementById("proposalParmsForm");
-  const resetButton = form.querySelector('button[type=submit]');
-  const rowTemplate = document.getElementById("proposalRow");
-  const inputTemplate = document.getElementById("proposalParmInput");
-  const searchParms = new URLSearchParams(window.location.search);
+      { name: 'meetStaff', defolt: 2, prompt: "number of staff", step: 0.1, min: 1.0 } ] },
+  ], generateProposal)));
 
-  const cloneLists = ParameterGroupList.map(group => {
-    const rowClone = rowTemplate.content.cloneNode(true);
-    const rowPrompt = rowClone.querySelector(".prompt");
-    rowPrompt.textContent = group.prompt;
-    const row = rowClone.querySelector(".row");
+  /**
+   * Ugly-ish way to construct the proposal text; sets element innerHTML directly.
+   */
+  function  generateProposal (form) {
+    const G = form.get.bind(form); // make accesses below more terse, e.g. G('format.count')
 
-    const inputClones = group.members.map(parm => {
-      const searchValue = searchParms.has(parm.name)
-            ? parseInt(searchParms.get(parm.name))
-            : parm.defolt;
-      CurrentParms[parm.name] = searchValue;
-      
-      const id = "parm-" + parm.name;
-      const inputClone = inputTemplate.content.cloneNode(true);
-      
-      const label = inputClone.querySelector("label");
-      label.textContent = parm.prompt;
-      label.setAttribute("for", id);
+    const dailyRate = G('Personel.salary') / G('Personel.workDays');
 
-      const input = inputClone.querySelector("input");
-      input.setAttribute("id", id);
-      input.value = searchValue;
-      input.dataset.parm = parm;
-      input.addEventListener('input', evt => {
-        const params = searchParms;
-        params.set(parm.name, input.value);
-        history.replaceState(null, '', window.location.pathname + '?' + params.toString());
-        
-        const updatedValue = parseInt(input.value);
-        CurrentParms[parm.name] = updatedValue;
-        generateProposal(CurrentParms);
-      });
-      
-      row.appendChild(inputClone);
-      return inputClone;
-    });
-    form.insertBefore(rowClone, resetButton);
-    return inputClones;
-  });
+    const engineeringTime = (G('CoreDev.infra') + G('CoreDev.ui') + G('format.infra')*G('format.count') + G('format.ui')*G('format.count'));
+    const engineeringCost = engineeringTime * (G('Personel.salary')/12);
+    const travelCostPerMeeting = G('meetLogistics.transport') + (G('meetLogistics.travelDays')*G('meetLogistics.hotelNight')) + (G('meetLogistics.travelDays')*G('meetLogistics.perDiem')); // travel + hotel + per diem
 
-  console.log(cloneLists);
-  resetButton.addEventListener('submit', evt => {
-    history.replaceState(null, '', window.location.pathname);
-  });
-
-  function generateProposal(parms) {
-
-    const workDaysPerYear = 220;
-    const dailyRate = parms.salary / workDaysPerYear;
-
-    const engineeringTime = (parms.infrastructure + parms.ui + parms.formatInfra*parms.nFormats + parms.formatUi*parms.nFormats);
-    const engineeringCost = engineeringTime * (parms.salary/12);
-    const travelCostPerMeeting = parms.transport + (parms.travelDays*parms.hotelNight) + (parms.travelDays*parms.perDiem); // travel + hotel + per diem
-
-    const meetings = parms.orgMeets*parms.nOrgs + parms.formatMeets*parms.nFormats;
+    const meetings = G('org.meets')*G('org.count') + G('format.meets')*G('format.count');
     const travelCost = meetings * travelCostPerMeeting;
-    const meetingStaffDays = meetings * parms.meetStaff;
+    const meetingStaffDays = (meetings * G('meetLogistics.meetStaff')).toFixed(2);
     const meetingStaffCost = meetingStaffDays * dailyRate;
 
-    
-    const totalCost = travelCost + meetingStaffCost + engineeringCost;
-    
+    const totalCost = (travelCost + meetingStaffCost + engineeringCost).toFixed(0);
+
     const proposalHTML = `
-  <h2>Proposal: Establishment of a Data (@@what's the breadth of this?) Exchange Standard</h2>
+  <h2>Proposal: Establishment of a (@@what's the breadth of this?) Data Exchange Standard</h2>
 
   <h3>1. Executive Summary</h3>
   <p>
-    This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${parms.nOrgs}</strong> organizations and <strong>${parms.nFormats}</strong> target formats.
+    This proposal outlines the estimated resources, time, and costs required to establish a data exchange standard across <strong>${G('org.count')}</strong> organizations and <strong>${G('format.count')}</strong> target format.
     The project includes coordination meetings, infrastructure development, user interface (UI) work, and format-specific engineering.
   </p>
 
   <h3>2. Scope of Work</h3>
   <table>
-    <li>Stakeholder engagement: ${parms.orgMeets} meetings per organization and ${parms.formatMeets} meetings per format.</li>
+    <li>Stakeholder engagement: ${G('org.meets')} meetings per organization and ${G('format.meets')} meetings per format.</li>
     <li>Travel & subsistence for project team members attending stakeholder sessions.</li>
     <li>Infrastructure engineering: Core back-end and data exchange infrastructure.</li>
     <li>User Interface (UI) development: Reference implementation for interacting with the data exchange.</li>
@@ -199,10 +238,10 @@
 
   <h3>3. Resource Requirements</h3>
   <table>
-    <tr><td>              </td><td>core                   </td><td> </td><td>${parms.nOrgs} orgs                                                            </td><td> </td><td>${parms.nFormats} formats                                                                       </td><td> </td><td>                                    </td></tr> 
-    <tr><th>Infrastructure</th><td>${parms.infrastructure}</td><td>+</td><td>0                                                                              </td><td>+</td><td>${parms.formatInfra} months per format X ${parms.nFormats} = ${parms.formatInfra*parms.nFormats}</td><td>=</td><td> ${parms.infrastructure + parms.formatInfra*parms.nFormats} months FTE </td></tr>
-    <tr><th>UI            </th><td>${parms.ui}            </td><td>+</td><td>0                                                                              </td><td>+</td><td>${parms.formatUi   } months per format X ${parms.nFormats} = ${parms.formatUi   *parms.nFormats}</td><td>=</td><td> ${parms.ui             + parms.formatUi   *parms.nFormats} months FTE             </td></tr>
-    <tr><th>F2F Meetings  </th><td>0                      </td><td>+</td><td>${parms.orgMeets} F2Fs per org * ${parms.nOrgs} = ${parms.orgMeets*parms.nOrgs}</td><td>+</td><td>${parms.formatMeets} F2F per format    X ${parms.nFormats} = ${parms.formatMeets*parms.nFormats}</td><td>=</td><td> ${parms.orgMeets*parms.nOrgs + parms.formatMeets*parms.nFormats } * ${parms.meetStaff} staff per meeting = ${meetingStaffDays} staff-days     </td></tr>
+    <tr><td>              </td><td>core                 </td><td> </td><td>${G('org.count')} org                                                                </td><td> </td><td>${G('format.count')} format                                                                            </td><td> </td><td>                                                                                                                                                              </td></tr> 
+    <tr><th>Infrastructure</th><td>${G('CoreDev.infra')}</td><td>+</td><td>0                                                                                    </td><td>+</td><td>${G('format.infra')} months per format X ${G('format.count')} = ${G('format.infra')*G('format.count')} </td><td>=</td><td> ${G('CoreDev.infra') + G('format.infra')*G('format.count')} months FTE                                                                                       </td></tr>
+    <tr><th>UI            </th><td>${G('CoreDev.ui')}   </td><td>+</td><td>0                                                                                    </td><td>+</td><td>${G('format.ui')   } months per format X ${G('format.count')} = ${G('format.ui')   *G('format.count')} </td><td>=</td><td> ${G('CoreDev.ui')             + G('format.ui')   *G('format.count')} months FTE                                                                              </td></tr>
+    <tr><th>F2F Meetings  </th><td>0                    </td><td>+</td><td>${G('org.meets')} F2Fs per org * ${G('org.count')} = ${G('org.meets')*G('org.count')}</td><td>+</td><td>${G('format.meets')} F2F per format    X ${G('format.count')} = ${G('format.meets')*G('format.count')} </td><td>=</td><td> ${G('org.meets')*G('org.count') + G('format.meets')*G('format.count') } * ${G('meetLogistics.meetStaff')} staff per meeting = ${meetingStaffDays} staff-days </td></tr>
   </table>
 
   <h3>4. Cost Estimate</h3>
@@ -211,20 +250,18 @@
     <tr><td>Travel & subsistence (${meetings} meetings)</td><td>${travelCost.toFixed(0)}</td></tr>
     <tr><td>Staff time – meetings (${meetingStaffDays} days)</td><td>${meetingStaffCost.toFixed(0)}</td></tr>
     <tr><td>Engineering & UI (FTEs)</td><td>${engineeringCost.toFixed(0)}</td></tr>
-    <tr><th>Total Project Estimate</th><th>${totalCost.toFixed(0)}</th></tr>
+    <tr><th>Total Project Estimate</th><th>${totalCost}</th></tr>
   </table>
 
   <h3>5. Assumptions</h3>
   <ul>
-    <li>Billing rate: ${parms.salary} €/year (~${dailyRate.toFixed(0)} €/day).</li>
-    <li>Hotel: ${parms.hotelNight} €/night, ${parms.travelDays} nights per meeting.</li>
-    <li>Per diem: ${parms.perDiem} €/day, ${parms.travelDays} days per meeting.</li>
-    <li>Travel: ${parms.transport} €/meeting within Europe.</li>
+    <li>Billing rate: ${G('Personel.salary')} €/year (~${dailyRate.toFixed(0)} €/day).</li>
+    <li>Hotel: ${G('meetLogistics.hotelNight')} €/night, ${G('meetLogistics.travelDays')} nights per meeting.</li>
+    <li>Per diem: ${G('meetLogistics.perDiem')} €/day, ${G('meetLogistics.travelDays')} days per meeting.</li>
+    <li>Travel: ${G('meetLogistics.transport')} €/meeting within Europe.</li>
   </ul>`;
     document.getElementById('proposalContent').innerHTML = proposalHTML;
   }
-  
-  window.addEventListener('load', evt => {generateProposal(CurrentParms)});
 </script>
 
 </body>
