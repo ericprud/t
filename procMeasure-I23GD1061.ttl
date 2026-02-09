@@ -1,1 +1,198 @@
-/home/eric/jobs/Kanda/geek/docs/campaign/procMeasure-I23GD1061.ttl
+PREFIX edi: <https://drug-instances.example/#>
+PREFIX ex: <http://some.example/this/doc#>
+PREFIX pf: <http://some.example/this/pf#>
+PREFIX DPDS-SM: <http://some.example/DPDS-SM#> # Version:4.0 Status: effective Effective date: 12 September (2022)
+PREFIX gang: <https://w3id.org/cmc-stagegate#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX qudt: <http://qudt.org/vocab/unit/>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX olo: <http://purl.org/ontology/olo/core#>
+PREFIX cmc-sg: <https://w3id.org/cmc-stagegate>
+PREFIX idmp: <https://spec.pistoiaalliance.org/idmp/ontology/MetadataIDMP/>
+
+PREFIX ont: <http://my.example/ns/ont#>
+PREFIX gist: <https://ontologies.semanticarts.com/gist/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX time: <http://www.w3.org/2006/time#>
+
+<#JNJ-75276617%20(Bleximenib)> a gang:DevelopmentProgram ;
+  gang:hasUniqueId "JNJ-75276617 (Bleximenib)" ; # PROJECT or just gang:name ?
+  idmp:hasStatus "GMP" ; # GXP_STATUS	GMP
+  # ORGANIZATION	Small Molecule the same as modality
+  idmp:hasSynonym "Menin-MLL;Menin-KMT2A(MLL)" ; #PROJECT_ALIAS
+  idmp:isIdentifiedBy "" ; # PROJECT_EXTERNAL_ID
+  .
+
+<#campaign_2023_05_JNJ-75276617-ZDH>
+  ex:product <#JNJ-75276617-ZDH> ; # COMPOUND_*
+  ex:inProject <#JNJ-75276617%20(Bleximenib)> ; # PROJECT
+  idmp:refersTo	"GMP4" ; #CAMPAIGN_REFERENCE
+  .
+
+<#JNJ-75276617-ZDH> a gang:DrugSubstance ;
+  gang:hasUniqueIdentifier "JNJ-75276617-ZDH" ; # COMPOUND_ID
+  gang:hasAlternativeTerm "JNJ-75276617-ZDH", "R605032", "2866179-96-4" ; # COMPOUND_ALIAS
+  gang:hasModality "Small Molecule" ; # MODALITY
+  .
+
+<#JNJ-75276617-ZDH,%20CRUDE> a gang:Intermediate ; # MATERIAL_MANUFACTURING_STAGE
+  gang:hasUniqueIdentifier "JNJ-75276617-ZDH, CRUDE" ; # MATERIAL_DESCRIPTION, MATERIAL_PROCESS_NAME, MATERIAL_NAME
+  pf:materialReference <../materialCode/510948> ; # MATERIAL_MASTER_NUMBER
+  gang:hasRole [a idmp:MaterialRole ; rdfs:label ""] ; # MATERIAL_ROLE
+  ex:hasMaterialClass "" ; #MATERIAL_CLASS
+  # 	JNJ-75276617-ZDH, CRUDE
+  ex:hasMaterialGrade "" ; #MATERIAL_GRADE
+  idmp:hasRelatedSubstanceIdentifier "" ; #COMPOUND_EXTERNAL_ID	@@ final or lot target?
+
+<#I23GD1061> a ont:Lot, DPDS-SM:Process ; # LOT_NUMBER
+  gang:lotNumber "I23GD1061" ;
+  gang:outputMaterial <#JNJ-75276617-ZDH,%20CRUDE> ;
+  gang:name "Synthesis" ; # PROCESS
+  gist:hasProductionEvent [
+    a gist:Event ;
+    gist:hasStart [ gist:hasDateTime "2023-08-06T00:00:00.000Z"^^xsd:dateTime  ] ; # LOT_MANUFACTURE_DATE
+    gist:hasPlace [ a gist:Place ; gist:identifiedBy [ gist:hasTextValue "CDPP, Geel" ] ] ; # LOT_MANUFACTURE_SITE
+    gist:hasMagnitude [ qudt:numericValue "114.04" ] ;# LOT_MANUFACTURE_SCALE !! not units
+    ex:hasRecipeId "PP00510948_01 | TP00" ; #RECIPE_ID	PP00510948_01 | TP00 (is related to the process)
+    idmp:hasName "PP00510948_01" ; # RECIPE_NAME	PP00510948_01
+    idmp:hasVersion "Unknown" ; #RECIPE_VERSION	Unknown
+    ex:hasLotPurposeDevelopment "Phase IIb" ; # LOT_PURPOSE	Development | Phase IIb (like clinical trials)
+    ex:hasYield "82.74" ; # LOT_YIELD	82.74
+    idmp:hasAmount "138.7" ; # LOT_AMOUNT	138.7
+    udt:unit unit: "kg" ;    # LOT_AMOUNT_MEAS_UNIT	kg
+    udt:unit unit: "%" ; # ???LOT_MANUFACTURE_SCALE_QUANTITY_MEAS_UNIT	% 
+    ex:hasLotManufactureScaleQuantity: "114.041803279" ; # LOT_MANUFACTURE_SCALE_QUANTITY	114.041803279
+    ex:hasFormilationId: "" ; # FORMULATION_ID
+    ex:hasFormulationName: "" ; # FORMULATION_NAME
+    ex:hasLotContainerNumber: "" ; # LOT_CONTAINER_NUMBER
+    ex:hasLotOrderNumber: "20891153" ; # LOT_ORDER_NUMBER	20891153
+    ex:haslotPackaging: "" ; # LOT_PACKAGING
+    time:hasEnd: "" , #PROCESS_END_DATE
+    time:hasBeginning "" , # PROCESS_START_DATE
+    ex:hasProcessURI "" , # PROCESS_URI in idmp idmp:hasURI ""
+    ex:hasProcessOperationURI "" , # PROCESS_OPERATION_URI
+    ex:hasProcessActionURI "" ,# PROCESS_ACTION_URI
+    # PROCESS_CMC
+    # PROCESS_OPERATION_CMC
+    # PROCESS_ACTION_CMC
+    ex:hasSourceSystem "PAS-X Geel" #SOURCE_SYSTEM	PAS-X Geel
+    ] .
+
+# this fails to capture the fact that <#I23GD1061_Reaction> and <#I23GDxxxx_Reaction> are the same. a URI would help!
+<#I23GD1061_Reaction> a DPDS-SM:Stage, DPDS-SM:Reaction ; # NOT a gang:Stage # LOT_NUMBER + PROCESS_STATE
+  gang:name "Reaction" ; # PROCESS_STAGE
+  idmp:hasSynonym [a DPDS-SM:Stage ; rdfs:label ""] ; # PROCESS_STAGE_ALIAS
+  # PROCESS_STAGE_CMC
+  ex:hasProcessStageURI "" ; # PROCESS_STAGE_URI
+  .
+
+<#I23GD1061_030-060%20%7C%205845066541%20Reaction%20%7C%205845066763%20Agitate> a DPDS-SM:Operation ; # LOT_NUMBER + STEP_PATH
+  # ex:executes <../recipe/Menin-ProcessFlow-15#Reactor%201_1_Mixture%20preparation_1_Agitate_1> ; # stretch goal
+  ex:stepPath "030-060 | 5845066541 Reaction | 5845066763 Agitate" ; # STEP_PATH
+  gang:hasLot <#I23GD1061> ; # LOT_KEY	{"material_name": "JNJ-75276617-ZDH, CRUDE", "lot_number": "I23GD1061"}
+  ex:inCampaign <#campaign_2023_05_JNJ-75276617-ZDH> ;
+  ex:stage <#I23GD1061_Reaction> ;
+  ex:atTime [
+    a time:Instant ;
+    time:inXSDDateTime "2023-07-28T09:02:33.385Z"^^xsd:dateTime # MEASUREMENT_TIME
+  ] ;
+
+  # ex:duringTime [
+  #   a time:Interval ;
+  #   time:hasBeginning "2023-07-28T09:02:33.385Z"^^xsd:dateTime # MEASUREMENT_TIME
+  #   time:hasEnd [ time:inXSDDateTime "@@ MEASUREMENT_TIME + MEASUREMENT_ELAPSED_TIME modulo MEASUREMENT_ELAPSED_TIME_MEAS_UNIT"^^xsd:dateTime ] .
+  # ] ;
+
+  # PROCESS_OPERATION	Agitate # ideally ties back to ProcessFlow, e.i. <#Reactor%201_1_Mixture%20preparation_1_Agitate_1>
+  # PROCESS_ACTION
+  ex:hasEquationASCIIMath "" ; # EQUATION_ASCIIMATH
+  pf:normalOperatingRange [
+    qudt:lowerBoundValue 10 ; # LOWER_NOR
+    qudt:upperBoundValue 25 ; # UPPER_NOR
+  ] ;
+  # same for LOWER_MOR, UPPER_MOR, LOWER_PAR, UPPER_PAR
+
+  ex:hasMeasurement <#I23GD1061_030-060%20%7C%205845066541%20Reaction%20%7C%205845066763%20Agitate_Agitator%20speed> ;
+  idmp:hasComment "50.75" ; # STEP_COMMENT	PMI: 50.75
+  time:hasEnd: "" , #PROCESS_END_DATE
+  time:hasBeginning "" ,# STEP_END_DATE
+  idmp:isIdentifiedBy "" ; # STEP_EXTERNAL_ID
+  idmp:hasStartDate "" ; # STEP_START_DATE
+  # STEP_PATH_CMC
+  .
+
+<#I23GD1061_030-060%20%7C%205845066541%20Reaction%20%7C%205845066763%20Agitate_Agitator%20speed> # LOT_NUMBER + STEP_PATH + PARAMETER
+  a ont:ProcessMeasurement, idmp:MaterialMeasure ;
+
+  # redundant against CQA below:
+  # idmp:hasParameter [ # PARAMETER
+  #   a idmp:Parameter ;
+  #   idmp:parameterName "Agitator speed" ;
+  #   ex:display_Name "Agitator speed" ;
+  #   ex:description "Agitator speed"
+  # ] ;
+
+  ex:measuredCQA [ # NOT gang:hasCQA because it has domain gang:Specification
+    a gang:AnalyticalResult ;
+    gang:measuredOnLot <#I23GD1061> ; # redundant against ^ex:idunno/gang:hasLot
+    gang:hasMeasurementFor [
+      a gang:QualityAttribute ;
+      rdfs:label "Agitator speed" ; # PARAMETER, PARAMETER_DISPLAY_NAME, PARAMETER_DESCRIPTION
+      # gang:actualDate "2023-07-28T09:02:33.385Z"^^xsd:dateTime # MEASUREMENT_TIME
+    ] ;
+    qudt:measuredValue 15 ; # ACTUAL_MEASUREMENT, ignore ACTUAL_MEASUREMENT_NUMERIC
+    qudt:unit unit:RPM # ACTUAL_MEAS_UNIT
+    ex:hasParameterURI "" ; # PARAMETER_URI
+    ex:hasParameterPrefLabel "" ; # PARAMETER_PREF_LABEL
+    ex:hasCriticality "Non-critical" ; # PARAMETER_CRITICALITY	Non-critical (in ganf we have isCritiacal true or false)
+    # PARAMETER_FULL	Reaction-Agitate-Agitator speed ? PROCESS_STAGE - endOf(STEP_PATH) - PARAMETER
+    idmp:hasCount "2" ; # PARAMETER_FULL_COUNT	2
+    ex:hasFullUniquePatameters "N" ; # PARAMETER_FULL_UNIQUE	N
+    # PARAMETER_FULL_NO_ELAPSED_TIME	Reaction-Agitate-Agitator speed
+  ] ;
+
+  ex:measurement [
+    ex:aspect ex:AgitatorSpeed ;
+    qudt:measuredValue 15 ;
+    qudt:unit unit:RPM ; 
+    ex:hasCurationMeasurment ""; # CURATION_MEASUREMENT
+    # MEASUREMENT_DESCRIPTION	measuredvalueactivity @@ or maybe as a type
+    ex:hasSamplingPoint: "" ; # SAMPLING_POINT
+    ex:hasActualMeasurmentMinimum "" ; # ACTUAL_MEASUREMENT_MINIMUM
+    ex:hasActualMeasurmentMaximum"" ;# ACTUAL_MEASUREMENT_MAXIMUM
+  ] ;
+
+  pf:setPoint [ # PROCESS_OPERATION c.f. repeats propperty from ProcessFlow
+    qudt:numericValue 15 ; # SETPOINT, ignore SETPOINT_NUMERIC
+    qudt:unit unit:REV-PER-MIN ; # SETPOINT_MEAS_UNIT
+  ] ;
+  .
+
+# equipment
+  # EQUIPMENT_CLASS
+  # EQUIPMENT_TYPE
+  # EQUIPMENT_ID
+
+# unknown
+# CURATION_ALL
+# LOT_NUMBER_PIVOT_KEY	-> some other pivot table
+# LOT_NUMBER_MEASUREMENT_TIME_PIVOT_KEY
+# CURATION_COMPOUND
+# CURATION_LOT
+# SAMPLE_ID
+# REFERENCE
+# SOURCE_SYSTEM_NATURAL_KEY
+# RESULT_ID	10
+# INVESTIGATION_REFERENCE
+# CALCULATION_ASCIIMATH
+# INGREDIENT_MATERIAL_NAME
+# IN_PROCESS_TEST_TYPE
+# REFERENCE_SECONDARY
+# CURATION_PROCESS
+
+# useful view:
+  # STEP_INDEX	030-060
+  # PROCESS_STAGE_INDEX	 5845066541 Reaction
+  # PARAMETER_INDEX	 5845066763 Agitate
