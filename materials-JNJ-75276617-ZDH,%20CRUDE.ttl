@@ -1,0 +1,82 @@
+PREFIX edi: <https://drug-instances.example/#>
+PREFIX ex: <http://some.example/this/doc#>
+PREFIX pf: <http://some.example/this/pf#>
+PREFIX DPDS-SM: <http://some.example/DPDS-SM#> # Version:4.0 Status: effective Effective date: 12 September (2022)
+PREFIX gang: <https://w3id.org/cmc-stagegate#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX qudt: <http://qudt.org/vocab/unit/>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX olo: <http://purl.org/ontology/olo/core#>
+PREFIX cmc-sg: <https://w3id.org/cmc-stagegate>
+PREFIX idmp: <https://spec.pistoiaalliance.org/idmp/ontology/MetadataIDMP/>
+PREFIX ont: <http://my.example/ns/ont#>
+PREFIX gist: <https://ontologies.semanticarts.com/gist/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX time: <http://www.w3.org/2006/time#>
+
+
+<#JNJ-75276617-ZDH,%20CRUDE> a idmp:Material ;
+  idmp:hashame "JNJ-75276617-ZDH, CRUDE" ; # MATERIAL_NAME
+  gang:hasUniqueIdentifier "JNJ-75276617-ZDH, CRUDE" ; # MATERIAL_DESCRIPTION (the same as db02 measurments)
+  # ex:hasMaterialTradeName "" ; #MATERIAL_TRADE_NAME
+  ex:hasMaterialKey '{""material_name"": ""JNJ-75276617-ZDH, CRUDE""}'^^rdf:JSON ; #MATERIAL_KEY
+  # ex:hasMaterialCatalogNumber "" ; #MATERIAL_CATALOG_NUMBER,
+  ex:hasMaterialClass "Chemical" ; # MATERIAL_CLASS,Chemical
+  # ex:hasMaterialProcessStageDisplayName "" ; # MATERIAL_PROCESS_STAGE_DISPLAY_NAME,
+  # ex:hasProcessStageName "" ; # MATERIAL_PROCESS_STAGE_NAME,
+  # MATERIAL_PROCESS_STAGE_URI,
+  idmp:hasRole "API Intermediate" ; # MATERIAL_PHARMACEUTICAL_ROLE,API Intermediate
+  ex:hasCuration: "Y" ; # CURATION_COMPOUND,Y
+  ex:materialReference <../materialCode/510948> ; # Material_master_number
+    
+  # idmp:hasPhysicalCharacteristic [
+  #     a idmp:PhysicalCharacteristic ;
+  #     ex:aspect ex:Density ;           
+  #     qudt:numericValue ""^^xsd:double ; # MATERIAL_DENSITY (Value)
+  #     qudt:unit unit: "" ;          # MATERIAL_DENSITY_UOM (Unit)
+  # ] ;
+
+  # idmp:hasPhysicalCharacteristic [
+  #     a idmp:PhysicalCharacteristic ;
+  #     ex:aspect ex:Concentration ;
+  #     qudt:numericValue ""^^xsd:double ;   # MATERIAL_CONCENTRATION
+  #     qudt:unit unit: ""          # MATERIAL_CONCENTRATION_UOM
+  # ] ;
+
+  # idmp:hasPhysicalCharacteristic [
+  #     a idmp:PhysicalCharacteristic ;
+  #     ex:aspect ex:ContainerVolume ;
+  #     qudt:numericValue ""^^xsd:double ;  # MATERIAL_CONTAINER_VOLUME
+  #     qudt:unit unit: ""                     # MATERIAL_CONTAINER_VOLUME_UOM
+  # ] ;
+
+  # idmp:hasPhysicalCharacteristic [
+  #     a idmp:PhysicalCharacteristic ;
+  #     ex:aspect ex:ProteinMass ;
+  #     qudt:numericValue ""^^xsd:double ;  # MATERIAL_CONTAINER_PROTEIN_MASS
+  #     qudt:unit unit: ""                # MATERIAL_CONTAINER_PROTEIN_MASS_UOM
+  # ] .
+  # ex:hasMaterialPrimaryContainerType: "" ; # MATERIAL_PRIMARY_CONTAINER_TYPE,
+  
+  #########    FROM DB02 ONTOLOGY    ########
+  # gang:hasUniqueId "" ; # PROJECT or just gang:name ?
+  # idmp:hasStatus "GMP" ; # GXP_STATUS	GMP
+  # # ORGANIZATION	Small Molecule the same as modality
+  # idmp:hasSynonym "Menin-MLL;Menin-KMT2A(MLL)" ; #PROJECT_ALIAS
+  # idmp:isIdentifiedBy "" ; # PROJECT_EXTERNAL_ID
+  
+  
+    #########    FROM this table and we see empty values     ########
+  # PROJECT,
+  # PROJECT_ALIAS,
+  # PROJECT_EXTERNAL_ID,
+  ex:hasSourceSystem [ gang:hasUniuqueIdentifier "Biovia Workbook, SAP-eu2" ] ;   # SOURCE_SYSTEM,"Biovia Workbook, SAP-eu2"
+  ex:hasSourceSystemCount "2" ;   # SOURCE_SYSTEM_COUNT,2
+  
+  
+ex:productReference <../product/JNJ-75276617-ZDH> ; 
+<../product/JNJ-75276617-ZDH> a ex:Product ;
+  gang:hasUniqueIdentifier "JNJ-75276617-ZDH" 
+  gang:hasAlternativeTerm "JNJ-75276617-ZDH" ; # COMPOUND_ALIAS,JNJ-75276617-ZDH
