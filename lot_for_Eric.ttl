@@ -1,0 +1,47 @@
+PREFIX edi: <https://drug-instances.example/#>
+PREFIX ex: <http://some.example/this/doc#>
+PREFIX pf: <http://some.example/this/pf#>
+PREFIX DPDS-SM: <http://some.example/DPDS-SM#> # Version:4.0 Status: effective Effective date: 12 September (2022)
+PREFIX gang: <https://w3id.org/cmc-stagegate#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX qudt: <http://qudt.org/vocab/unit/>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX olo: <http://purl.org/ontology/olo/core#>
+PREFIX cmc-sg: <https://w3id.org/cmc-stagegate>
+PREFIX idmp: <https://spec.pistoiaalliance.org/idmp/ontology/MetadataIDMP/>
+
+PREFIX ont: <http://my.example/ns/ont#>
+PREFIX gist: <https://ontologies.semanticarts.com/gist/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX time: <http://www.w3.org/2006/time#>
+
+<#I23GD1061> a ont:Lot, DPDS-SM:Process ; # LOT_NUMBER
+  gang:lotNumber "I23GD1061" ;
+  idmp:hasSynonym "I23GD1061" ; # LOT_NUMBER_ALIAS
+  ex:hasLotKey '"{""material_name"": ""JNJ-75276617-ZDH, CRUDE"", ""lot_number"": ""I23GD1061""}"'^^rdf:JSON ; #MATERIAL_KEY  # LOT_KEY,"{""material_name"": ""JNJ-75276617-ZDH, CRUDE"", ""lot_number"": ""I23GD1061""}"
+  # ex:hasLotExpirationDate "" ;   # LOT_EXPIRATION_DATE,
+  gist:hasStart [ gist:hasDateTime "2023-08-06 00:00:00.000"^^xsd:dateTime  ] ;  # LOT_MANUFACTURE_DATE,2023-08-06 00:00:00.000
+  idmp:hasAmount "138.7" ; # LOT_AMOUNT,139.131
+  udt:unit unit: "kg" ;     # LOT_AMOUNT_UOM,KG
+  ex:hasManufactureSite "Geel"     # LOT_MANUFACTURER_SITE,Geel
+  ex:hasLotManufacturer "JSC"  # LOT_MANUFACTURER,JSC
+  # ex:hasLotManufactureScale ""  # LOT_MANUFACTURE_SCALE,
+  # udt:unit unit: "" ;  # LOT_MANUFACTURE_SCALE_UOM,
+  # ex:hasLotPurpose "" ;   # LOT_PURPOSE,
+  # ex:hasControlDescription "" ;   # LOT_CONTROL_DESCRIPTION,
+  # ex:hasControlRecipeKey "" ;    # CONTROL_RECIPE_KEY,
+  # ex:hasLotQualificationStatus "" ;    # LOT_QUALIFICATION_STATUS,
+  # ex:hasMaterialRoleInProcess "" ;    # MATERIAL_ROLE_IN_PROCESS,
+  # ex:hasLotProcessCell "" ;   # LOT_PROCESS_CELL,
+  # ex:hasLotProcessMinorVersion: "" ; # LOT_PROCESS_MINOR_VERSION,
+  ex:hasSourceSystem "SAP-eu2" ;  # SOURCE_SYSTEM,SAP-eu2
+  ex:hasSourceSystemCount "1" ;  # SOURCE_SYSTEM_COUNT,1
+  # ex:hasLotManufacturerDepartment "" ;  # LOT_MANUFACTURER_DEPARTMENT,
+
+<#JNJ-75276617-ZDH> a gang:DrugSubstance ;
+  gang:hasUniqueIdentifier "JNJ-75276617-ZDH, CRUDE" ;   # LOT_DESCRIPTION,"JNJ-75276617-ZDH, CRUDE"
+  ex:hasMaterialKey '{""material_name"": ""JNJ-75276617-ZDH, CRUDE""}'^^rdf:JSON ; # MATERIAL_KEY,"{""material_name"": ""JNJ-75276617-ZDH, CRUDE""}"
+  ex:materialReference <../materialCode/510948> ;  # MATERIAL_MASTER_NUMBER,510948
+
