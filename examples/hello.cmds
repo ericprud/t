@@ -1,0 +1,13 @@
+# The cmds language: print statements and counted repetition.
+print "hello,", "world";
+
+repeat 3 {
+  print "tick", 1, "tock", 2;
+}
+
+repeat 2 {
+  repeat 2 { print "  nested"; }
+  print "outer";
+}
+
+print "done";
