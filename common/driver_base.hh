@@ -63,6 +63,11 @@ public:
   bool trace_parsing() const { return trace_parsing_; }
   void trace_parsing(bool on) { trace_parsing_ = on; }
 
+  // CRTP hook: run() calls self().begin_parse() before each parse.
+  // Shadow it in a derived driver to reset per-parse state (see
+  // calc::driver, which resets its builder here).
+  void begin_parse() {}
+
 protected:
   driver_base() = default;
   ~driver_base() = default;
@@ -79,6 +84,7 @@ private:
     num_errors_ = 0;
     result_.reset();
     loc_.initialize(&file_);
+    self().begin_parse();
     Parser parser(self());
     parser.set_debug_level(trace_parsing_);
     const int status = parser.parse();

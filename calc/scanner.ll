@@ -30,6 +30,10 @@ id      [a-zA-Z_][a-zA-Z_0-9]*
 number  ([0-9]+\.?[0-9]*|\.[0-9]+)([eE][-+]?[0-9]+)?
 blank   [ \t\r]
 
+/* Maximal munch caveat: "2." lexes as one number token, so the push
+ * operator needs whitespace after a number: "2 ." — as in RPN input
+ * anyway.  A lone "." never matches {number} and falls through to PUSH. */
+
 %%
 %{
   /* Runs each time yylex is entered. */
@@ -44,8 +48,8 @@ blank   [ \t\r]
 "-"        return parse::calc_parser::make_MINUS(loc);
 "*"        return parse::calc_parser::make_STAR(loc);
 "/"        return parse::calc_parser::make_SLASH(loc);
-"("        return parse::calc_parser::make_LPAREN(loc);
-")"        return parse::calc_parser::make_RPAREN(loc);
+"."        return parse::calc_parser::make_PUSH(loc);
+"="        return parse::calc_parser::make_TEST(loc);
 
 {number}   {
   errno = 0;

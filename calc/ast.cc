@@ -1,5 +1,6 @@
 #include "calc/ast.hh"
 
+#include <sstream>
 #include <utility>
 
 namespace calc {
@@ -71,23 +72,6 @@ private:
   node_ptr lhs_, rhs_;
 };
 
-class negate_node final : public node {
-public:
-  negate_node(node_ptr operand, parse::location l)
-      : node(std::move(l)), operand_(std::move(operand)) {}
-
-  double eval(const environment& env) const override {
-    return -operand_->eval(env);
-  }
-
-  void print(std::ostream& os) const override {
-    os << "(-" << *operand_ << ')';
-  }
-
-private:
-  node_ptr operand_;
-};
-
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, const node& n) {
@@ -108,8 +92,90 @@ node_ptr binary(op o, node_ptr lhs, node_ptr rhs, parse::location l) {
                                        std::move(l));
 }
 
-node_ptr negate(node_ptr operand, parse::location l) {
-  return std::make_unique<negate_node>(std::move(operand), std::move(l));
+// ---- program --------------------------------------------------------
+
+std::optional<double> program::operator()(const environment& env) const {
+  for (const auto& t : tests_) {
+    const double lhs = t.lhs->eval(env);
+    const double rhs = t.rhs->eval(env);
+    if (lhs != rhs) {
+      std::ostringstream msg;
+      msg << *t.lhs << " = " << lhs << "  !=  " << *t.rhs << " = " << rhs;
+      throw test_failure(t.where, msg.str());
+    }
+  }
+  if (result_) return result_->eval(env);
+  return std::nullopt;
+}
+
+// ---- builder --------------------------------------------------------
+
+void builder::reset() {
+  pending_.reset();
+  stack_.clear();
+  tests_.clear();
+}
+
+void builder::operand(node_ptr value) {
+  if (pending_) {
+    diag_(value->where(),
+          "operand follows a pending value (missing '.'?)");
+    stack_.push_back(std::move(pending_));  // repair: push it and go on
+  }
+  pending_ = std::move(value);
+}
+
+node_ptr builder::pop(const parse::location& where, const char* who) {
+  if (stack_.empty()) {
+    diag_(where, std::string("'") + who + "': stack underflow");
+    return number(0, where);  // repair placeholder
+  }
+  node_ptr top = std::move(stack_.back());
+  stack_.pop_back();
+  return top;
+}
+
+node_ptr builder::take_rhs(const parse::location& where, const char* who) {
+  if (pending_) return std::move(pending_);
+  return pop(where, who);
+}
+
+void builder::combine(op o, const parse::location& where) {
+  static const char* const names[] = {"+", "-", "*", "/"};
+  const char* who = names[static_cast<int>(o)];
+  node_ptr rhs = take_rhs(where, who);
+  node_ptr lhs = pop(where, who);
+  stack_.push_back(binary(o, std::move(lhs), std::move(rhs), where));
+}
+
+void builder::push(const parse::location& where) {
+  if (!pending_) {
+    diag_(where, "'.' with no value to push");
+    return;
+  }
+  stack_.push_back(std::move(pending_));
+}
+
+void builder::test(const parse::location& where) {
+  node_ptr rhs = take_rhs(where, "=");
+  node_ptr lhs = pop(where, "=");
+  tests_.push_back({std::move(lhs), std::move(rhs), where});
+}
+
+program builder::finish(const parse::location& end) {
+  std::shared_ptr<const node> result;
+  if (pending_) {
+    result = std::move(pending_);
+  } else if (!stack_.empty()) {
+    result = std::move(stack_.back());
+    stack_.pop_back();
+  }
+  if (!stack_.empty())
+    diag_(end, std::to_string(stack_.size()) +
+                   " unused value(s) left on the stack");
+  program p(std::move(tests_), std::move(result));
+  reset();
+  return p;
 }
 
 }  // namespace calc

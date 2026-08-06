@@ -59,47 +59,46 @@ add_custom_target(gen_parsers DEPENDS
   ${GEN_DIR}/cmds_parser.cc ${GEN_DIR}/cmds_scanner.cc
   ${GEN_DIR}/location.hh)
 
-# Shared include paths for everything in the project.
-add_library(parse_common INTERFACE)
-target_include_directories(parse_common INTERFACE ${CMAKE_SOURCE_DIR} ${GEN_DIR})
-
-add_library(calc_lang STATIC
+# One library holding every parser — the shape a multi-parser project
+# (e.g. SWObjects) would ship.  Consumers see calc/driver.hh, cmds/driver.hh
+# and the common driver base; the generated code is an implementation detail.
+add_library(parselib STATIC
   calc/ast.cc
   ${GEN_DIR}/calc_parser.cc
-  ${GEN_DIR}/calc_scanner.cc)
-target_link_libraries(calc_lang PUBLIC parse_common)
-add_dependencies(calc_lang gen_parsers)
-
-add_executable(calc calc/main.cc)
-target_link_libraries(calc PRIVATE calc_lang)
-add_dependencies(calc gen_parsers)
-
-add_library(cmds_lang STATIC
+  ${GEN_DIR}/calc_scanner.cc
   ${GEN_DIR}/cmds_parser.cc
   ${GEN_DIR}/cmds_scanner.cc)
-target_link_libraries(cmds_lang PUBLIC parse_common)
-add_dependencies(cmds_lang gen_parsers)
+target_include_directories(parselib PUBLIC ${CMAKE_SOURCE_DIR} ${GEN_DIR})
+add_dependencies(parselib gen_parsers)
 
-add_executable(cmds cmds/main.cc)
-target_link_libraries(cmds PRIVATE cmds_lang)
-add_dependencies(cmds gen_parsers)
+add_executable(franken-exe main.cc)
+target_link_libraries(franken-exe PRIVATE parselib)
+add_dependencies(franken-exe gen_parsers)
 
 enable_testing()
 
-add_test(NAME calc.arith  COMMAND calc "1 + 2*3 - 4/2")
-set_tests_properties(calc.arith  PROPERTIES PASS_REGULAR_EXPRESSION "= 5")
-add_test(NAME calc.unary  COMMAND calc "-(1+2)*3")
-set_tests_properties(calc.unary  PROPERTIES PASS_REGULAR_EXPRESSION "= -9")
-add_test(NAME calc.vars   COMMAND calc "2*pi")
-set_tests_properties(calc.vars   PROPERTIES PASS_REGULAR_EXPRESSION "= 6.28319")
-add_test(NAME calc.divzero COMMAND calc "1/0")
-set_tests_properties(calc.divzero PROPERTIES WILL_FAIL TRUE)
-add_test(NAME calc.syntax COMMAND calc "1 + * 2")
-set_tests_properties(calc.syntax PROPERTIES WILL_FAIL TRUE)
+# The RPN example from the README: two tests hold, no final value.
+add_test(NAME calc.rpn      COMMAND franken-exe "calc(" 2 . 3 + 5 - 0 = ")")
+add_test(NAME calc.value    COMMAND franken-exe "calc(" 2 . 3 + ")")
+set_tests_properties(calc.value    PROPERTIES PASS_REGULAR_EXPRESSION "= 5")
+add_test(NAME calc.vars     COMMAND franken-exe "calc(" pi . 2 "*" ")")
+set_tests_properties(calc.vars     PROPERTIES PASS_REGULAR_EXPRESSION "= 6.28319")
+add_test(NAME calc.testfail COMMAND franken-exe "calc(" 1 . 2 = ")")
+set_tests_properties(calc.testfail PROPERTIES PASS_REGULAR_EXPRESSION "test failed")
+add_test(NAME calc.nodot    COMMAND franken-exe "calc(" 2 3 + ")")
+set_tests_properties(calc.nodot    PROPERTIES WILL_FAIL TRUE)
+add_test(NAME calc.divzero  COMMAND franken-exe "calc(" 1 . 0 / ")")
+set_tests_properties(calc.divzero  PROPERTIES WILL_FAIL TRUE)
 
-add_test(NAME cmds.hello  COMMAND cmds ${CMAKE_SOURCE_DIR}/examples/hello.cmds)
-set_tests_properties(cmds.hello  PROPERTIES PASS_REGULAR_EXPRESSION "tick 1 tock 2")
-add_test(NAME cmds.inline COMMAND cmds -e "repeat 2 { print \"hi\"; }")
-set_tests_properties(cmds.inline PROPERTIES PASS_REGULAR_EXPRESSION "hi\nhi")
-add_test(NAME cmds.syntax COMMAND cmds -e "print ;")
-set_tests_properties(cmds.syntax PROPERTIES WILL_FAIL TRUE)
+add_test(NAME cmds.inline   COMMAND franken-exe "cmds(" "repeat 2 { print \"hi\"; }" ")")
+set_tests_properties(cmds.inline   PROPERTIES PASS_REGULAR_EXPRESSION "hi\nhi")
+add_test(NAME cmds.file     COMMAND franken-exe "cmds(" "@${CMAKE_SOURCE_DIR}/examples/hello.cmds" ")")
+set_tests_properties(cmds.file     PROPERTIES PASS_REGULAR_EXPRESSION "tick 1 tock 2")
+add_test(NAME cmds.syntax   COMMAND franken-exe "cmds(" "print ;" ")")
+set_tests_properties(cmds.syntax   PROPERTIES WILL_FAIL TRUE)
+
+add_test(NAME franken.both  COMMAND franken-exe
+         "calc(" 2 . 3 + ")" "cmds(" "print \"both\";" ")")
+set_tests_properties(franken.both  PROPERTIES PASS_REGULAR_EXPRESSION "= 5.*both")
+add_test(NAME franken.unclosed COMMAND franken-exe "calc(" 1)
+set_tests_properties(franken.unclosed PROPERTIES WILL_FAIL TRUE)

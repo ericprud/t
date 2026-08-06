@@ -1,9 +1,25 @@
-/* Calculator grammar.
+/* RPN calculator grammar.
  *
- * Parses one arithmetic expression into a compile tree (calc::expression).
- * Nothing is evaluated at parse time: the semantic actions only assemble AST
- * nodes, and the caller later invokes expression::operator()(environment) as
- * often as it likes, with whatever variable bindings it likes.
+ *   2 . 3 + 5 - 0 =
+ *
+ * A number or identifier becomes the pending operand; "." pushes it onto the
+ * stack (think of the ENTER key on an RPN calculator); a binary operator
+ * takes its right operand from the pending slot (or the stack) and its left
+ * operand from the stack, and pushes the combination; "=" records a test.
+ *
+ * The stack is a *parse-time* stack of expression trees, not values: parsing
+ * produces a calc::program, and only program::operator()(environment)
+ * evaluates anything (running the "=" tests and yielding the final value).
+ *
+ * Contrast the action style with cmds/parser.yy.  There, every action
+ * computes a semantic value that flows up through $$/$n — the pure
+ * value-threading style.  Here the actions thread nothing: each token's
+ * action fires a side effect into the driver-held calc::builder, which owns
+ * the pending/stack state that spans rules.  This is the classic yacc shape
+ * for grammars whose natural state doesn't nest like the parse tree does.
+ *
+ * Note also what RPN buys at the grammar level: no precedence declarations,
+ * no %prec, no parentheses — the input order *is* the evaluation order.
  */
 
 %require "3.8"
@@ -28,8 +44,8 @@
 %define parse.lac full
 
 %locations
-/* This grammar owns the shared location header; the other grammars say
- * `%define api.location.file none` and include this one. */
+/* This grammar owns the shared location header; the other grammars reuse
+ * it via api.location.type. */
 %define api.location.file "location.hh"
 
 /* Passed to yylex and to the parser; also visible in actions as `drv`. */
@@ -50,41 +66,39 @@
 %token <double>      NUMBER "number"
 %token <std::string> IDENT  "identifier"
 %token
-  PLUS   "+"
-  MINUS  "-"
-  STAR   "*"
-  SLASH  "/"
-  LPAREN "("
-  RPAREN ")"
+  PLUS  "+"
+  MINUS "-"
+  STAR  "*"
+  SLASH "/"
+  PUSH  "."
+  TEST  "="
 ;
 
-%nterm <calc::node_ptr> expr
-
 /* Printers feed `bison --debug` traces (enable with driver.trace_parsing). */
-%printer { yyo << $$; } <double> <std::string>;
-%printer { if ($$) yyo << *$$; else yyo << "<null>"; } <calc::node_ptr>;
-
-%left "+" "-";
-%left "*" "/";
-%precedence NEG;
+%printer { yyo << $$; } <double>;
+%printer { yyo << '"' << $$ << '"'; } <std::string>;
 
 %%
 %start unit;
 
 unit:
-  expr  { drv.set_result(calc::expression($1)); }
+  words  { drv.set_result(drv.build().finish(@$)); }
 ;
 
-expr:
-  "number"           { $$ = calc::number($1, @$); }
-| "identifier"       { $$ = calc::variable($1, @$); }
-| expr "+" expr      { $$ = calc::binary(calc::op::add, $1, $3, @$); }
-| expr "-" expr      { $$ = calc::binary(calc::op::sub, $1, $3, @$); }
-| expr "*" expr      { $$ = calc::binary(calc::op::mul, $1, $3, @$); }
-| expr "/" expr      { $$ = calc::binary(calc::op::div, $1, $3, @$); }
-| "+" expr %prec NEG { $$ = $2; }
-| "-" expr %prec NEG { $$ = calc::negate($2, @$); }
-| "(" expr ")"       { $$ = $2; }
+words:
+  %empty
+| words word
+;
+
+word:
+  "number"      { drv.build().operand(calc::number($1, @1)); }
+| "identifier"  { drv.build().operand(calc::variable($1, @1)); }
+| "+"           { drv.build().combine(calc::op::add, @1); }
+| "-"           { drv.build().combine(calc::op::sub, @1); }
+| "*"           { drv.build().combine(calc::op::mul, @1); }
+| "/"           { drv.build().combine(calc::op::div, @1); }
+| "."           { drv.build().push(@1); }
+| "="           { drv.build().test(@1); }
 ;
 %%
 

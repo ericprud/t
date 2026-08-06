@@ -1,40 +1,80 @@
-# Two flex/bison C++ parsers, one set of shared infrastructure
+# Multiple flex/bison C++ parsers in one library, one executable
 
-A small demonstration of how to keep several bison C++ parsers in one
-project while factoring out everything they would otherwise duplicate:
-the location/position classes, the parse-driver scaffolding, and the
-build machinery.
+An idealized prototype of a library that ships several bison parsers
+(the shape of something like SWObjects): everything the parsers can
+share is factored out — the location/position classes, the parse-driver
+scaffolding, the build machinery — and one binary front-ends all of
+them.
+
+```console
+$ ./build/franken-exe calc\( 2 . 3 + 5 - 0 = \) cmds\( 'print "hi";' \)
+hi
+```
+
+## The CLI
+
+`franken-exe` takes find(1)-style groups; each group names the parser
+that gets its contents (quote the parens from your shell):
+
+```
+franken-exe [-p] [-s] { calc( <rpn words> ) | cmds( <script> ) }...
+```
+
+The words inside a group are joined with spaces to form the source
+text; a single word `@path` makes the group parse that file instead.
+Groups run in argument order; the first failure stops the run. `-p` /
+`-s` turn on the bison / flex traces.
+
+Exit status: `0` success · `255` (i.e. `exit(-1)`) a calc `=` test
+failed, with both values printed to stderr · `1` parse or runtime
+error · `2` bad command line.
 
 ## The two languages
 
-**`calc`** — the tired old calculator, except that parsing produces a
-*compile tree* instead of a value. The grammar's semantic actions only
-assemble `calc::node` objects; the parser's result is a
-`calc::expression` whose `operator()(environment)` evaluates the tree.
-Parse once, evaluate under as many variable bindings as you like:
+### `calc` — RPN, compiling to an evaluatable tree
+
+A number or identifier becomes the *pending* operand; `.` pushes it
+(think of the ENTER key on an RPN calculator); a binary operator takes
+its right operand from the pending slot (or the stack) and its left
+operand from the stack, and pushes the combination; `=` records a test.
+
+| word | effect |
+|---|---|
+| `2`, `pi` | pending := operand (error if one is already pending — "missing `.`?") |
+| `.` | push pending onto the stack |
+| `+ - * /` | rhs := pending (else pop); push(pop ⊕ rhs) |
+| `=` | rhs := pending (else pop); record test(pop == rhs) |
+
+Crucially the stack is a **parse-time stack of expression trees, not
+values**. Parsing produces a `calc::program`; only
+`program::operator()(environment)` evaluates anything — it runs the
+`=` tests in order (printing both sides and exiting nonzero on
+mismatch, via a `test_failure` exception the main turns into
+`return -1`) and then yields the final value, if the input left one:
 
 ```console
-$ ./build/calc "1 + 2*(3+4)" "2*pi"
-(1 + (2 * (3 + 4))) = 15
-(2 * pi) = 6.28319
-$ ./build/calc "y + 1"
-<string>:1.1: runtime error: undefined variable 'y'
+$ ./build/franken-exe calc\( 2 . 3 + \)
+(2 + 3) = 5                                # the compile tree, then its value
+$ ./build/franken-exe calc\( 2 . 3 + 5 - 0 = \) ; echo $?
+0                                          # test held: silent success
+$ ./build/franken-exe calc\( 2 . 3 + 99 = \) ; echo $?
+<calc>:1.12: test failed: (2 + 3) = 5  !=  99 = 99
+255
 ```
 
-Every AST node stores the `@$` location the parser saw, so *runtime*
-errors (undefined variable, division by zero) still point back into the
-source text.
+Every node stores the `@n` location the parser saw, so *runtime* errors
+(undefined variable, division by zero, failed tests) still point back
+into the source. Free variables (`pi`, `e` are pre-bound in the main)
+are resolved per evaluation, not per parse.
 
-**`cmds`** — a trivial imperative language (`print`, `repeat`) whose
-grammar demonstrates the other style of semantic action. A classic yacc
-action executes during the reduce:
+Note what RPN buys at the grammar level: `calc/parser.yy` has no
+precedence declarations, no `%prec`, no parentheses.
 
-```yacc
-stmt: PRINT args ';'   { print_now($2); }   /* immediate */
-```
+### `cmds` — deferred statements as closures
 
-Here instead each action builds a **closure capturing the `$1..$n`
-semantic values from the reduce stack**, deferring the work:
+A trivial imperative language (`print`, `repeat`) whose actions build
+**closures capturing the `$1..$n` semantic values from the reduce
+stack**, deferring the work until `program::operator()`:
 
 ```yacc
 stmt:
@@ -45,15 +85,22 @@ stmt:
     }
 ```
 
-The start rule hands the accumulated `cmds::program` to the driver, and
-`program::operator()` replays the steps:
+## Two action styles, on purpose
 
-```console
-$ ./build/cmds -e 'repeat 2 { print "hi", 1; }'
-hi 1
-hi 1
-$ ./build/cmds examples/hello.cmds
-```
+The grammars deliberately demonstrate the two canonical ways to write
+bison C++ semantic actions:
+
+* **`cmds`: pure value-threading.** Every action computes a semantic
+  value that flows up through `$$`/`$n`; the driver only receives the
+  finished start-symbol value. State nests exactly like the parse tree.
+* **`calc`: driver-held state.** RPN's pending/stack state spans rules
+  and doesn't nest, so the actions thread nothing — each fires a side
+  effect into a `calc::builder` owned by the driver
+  (`drv.build().combine(...)`). This is the classic yacc shape, and the
+  one large multi-parser codebases usually need. The builder reports
+  bad input (e.g. stack underflow) through a diagnostic callback bound
+  to the shared `error()`, and repairs with a placeholder so one
+  mistake yields one message.
 
 ## What is factored out, and how
 
@@ -82,14 +129,19 @@ everything language-independent: the current `parse::location`,
 diagnostics and error counting, trace flags, `parse_file` / `parse_string`
 entry points, and the parse-run scaffolding (construct parser, set debug
 level, run, collect the result deposited by the start rule via
-`set_result`). A concrete driver is then almost nothing:
+`set_result`). A `begin_parse()` hook lets a driver reset per-parse
+state (calc resets its builder there). A concrete driver is then tiny:
 
 ```cpp
-class driver : public common::driver_base<driver, parse::calc_parser, expression> {
+class driver : public common::driver_base<driver, parse::calc_parser, program> {
 public:
+  builder& build() { return builder_; }
+  void begin_parse() { builder_.reset(); }
   bool scan_begin_file(const std::string&);   // defined in scanner.ll,
   void scan_begin_string(const std::string&); // where the flex buffer
   void scan_end();                            // primitives are visible
+private:
+  builder builder_;
 };
 ```
 
@@ -112,14 +164,17 @@ The driver's `scan_begin_*` / `scan_end` member functions are *defined at
 the bottom of the `.ll` file*, because only there are `yyrestart`,
 `yy_scan_bytes`, and `YY_BUFFER_STATE` visible.
 
-### One build recipe (`CMakeLists.txt`)
+### One library, one build recipe
 
-`add_bison_parser()` / `add_flex_scanner()` generate everything into a
-single flat `build/gen/` directory so the shared `location.hh` resolves
-with a plain include. A custom command (rather than CMake's
-`BISON_TARGET`) is used so `location.hh` can be declared as an extra
-output of the calc grammar's run; a `gen_parsers` custom target gives
-every consumer one dependency that guarantees generation happens first.
+Everything — both parsers, both scanners, the AST — links into a single
+`libparselib.a`; consumers include `calc/driver.hh` / `cmds/driver.hh`
+and the generated code stays an implementation detail. In CMake,
+`add_bison_parser()` / `add_flex_scanner()` generate into a single flat
+`build/gen/` directory so the shared `location.hh` resolves with a plain
+include. A custom command (rather than CMake's `BISON_TARGET`) is used
+so `location.hh` can be declared as an extra output of the calc
+grammar's run; a `gen_parsers` custom target gives every consumer one
+dependency that guarantees generation happens first.
 
 ## Modern bison practice on display
 
@@ -133,39 +188,36 @@ current (bison ≥ 3.8) recommended setup for C++:
 | `%define api.token.constructor` | scanner returns *complete symbols* (`make_NUMBER(value, loc)`) — token kind, value, and location can never disagree |
 | `%define api.token.raw` | token kinds are symbol numbers; no char-literal tokens |
 | `%define api.token.prefix {TOK_}` | no name collisions with system macros |
-| `%define api.value.automove` | every `$n` is an rvalue; move-only AST nodes flow through the parser without explicit `std::move` (corollary: use each `$n` at most once) |
+| `%define api.value.automove` | every `$n` is an rvalue; move-only values flow through the parser without explicit `std::move` (corollary: use each `$n` at most once) |
 | `%define parse.error detailed` + `parse.lac full` | "expected X before Y" diagnostics with exact lookahead correction |
 | `%define parse.assert`, `parse.trace`, `%printer` | checked symbol lifetimes; `-p` / `-s` runtime traces print semantic values via the `%printer` rules |
-| `%locations` | positions tracked by the scanner (`YY_USER_ACTION` + `loc.step()`), stored into the AST via `@$` |
+| `%locations` | positions tracked by the scanner (`YY_USER_ACTION` + `loc.step()`), stored into the AST via `@n` |
 
 Other details worth stealing:
 
-* Named token aliases (`%token PLUS "+"`) so rules read `expr "+" expr`.
+* Named token aliases (`%token PLUS "+"`) so rules read `words "+"`.
 * Scanners throw `parser::syntax_error(loc, msg)` for lexical errors
   (bad characters, out-of-range numbers); the parser catches it and
   reports through the normal `error()` path.
 * `cmds` shows error recovery: `stmt: error ";"` resynchronizes at the
   next `;` so one bad statement doesn't hide later diagnostics (the
   driver still refuses to return a program if any error occurred).
-* Precedence declarations (`%left`, `%precedence NEG`) instead of
-  grammar-encoded precedence levels.
 
 ## Layout
 
 ```
-CMakeLists.txt          generation functions, targets, ctest suite
+CMakeLists.txt          generation functions, parselib, franken-exe, ctest suite
+main.cc                 franken-exe: group args -> the right parser
 common/driver_base.hh   CRTP driver shared by both languages
-calc/parser.yy          grammar -> calc::expression (compile tree)
+calc/parser.yy          RPN grammar -> calc::program (compile trees + tests)
 calc/scanner.ll         scanner + driver scan hooks
-calc/ast.{hh,cc}        node classes, expression::operator()
-calc/driver.hh          driver = base + scanner hooks (~10 lines)
-calc/main.cc            CLI / stdin REPL
+calc/ast.{hh,cc}        nodes, builder (parse-time tree stack), program
+calc/driver.hh          driver = base + builder + scanner hooks
 cmds/parser.yy          grammar -> cmds::program (deferred closures)
 cmds/scanner.ll         scanner + driver scan hooks
 cmds/program.hh         step = std::function, program::operator()
 cmds/driver.hh          mirror of calc/driver.hh
-cmds/main.cc            CLI (-e inline, files, stdin)
-examples/hello.cmds     sample script
+examples/hello.cmds     sample script (try: franken-exe cmds\( @examples/hello.cmds \))
 ```
 
 ## Build & test
